@@ -1069,12 +1069,15 @@ a:focus-visible, button:focus-visible {
         <div class="con-link"><span>Sydney, NSW, Australia 🇦🇺</span></div>
       </div>
     </div>
-    <div class="form r d2">
-      <div class="fg"><label class="fl">NAME</label><input type="text" class="fi" placeholder="Your name"></div>
-      <div class="fg"><label class="fl">EMAIL</label><input type="email" class="fi" placeholder="your@email.com"></div>
-      <div class="fg"><label class="fl">MESSAGE</label><textarea class="fi" placeholder="Tell me about your role or project..."></textarea></div>
-      <button class="fsub">TRANSMIT MESSAGE ◈</button>
-    </div>
+    <form class="form r d2" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="contactForm">
+      <input type="hidden" name="form-name" value="contact">
+      <p style="display:none"><label>Don't fill this out: <input name="bot-field"></label></p>
+      <div class="fg"><label class="fl">NAME</label><input type="text" name="name" class="fi" placeholder="Your name" required></div>
+      <div class="fg"><label class="fl">EMAIL</label><input type="email" name="email" class="fi" placeholder="your@email.com" required></div>
+      <div class="fg"><label class="fl">MESSAGE</label><textarea name="message" class="fi" placeholder="Tell me about your role or project..." required></textarea></div>
+      <button type="submit" class="fsub">TRANSMIT MESSAGE ◈</button>
+      <div id="form-status" style="display:none;font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;margin-top:.5rem;padding:.75rem 1rem;border-radius:1px;"></div>
+    </form>
   </div>
 </section>
 
@@ -1502,9 +1505,46 @@ document.querySelectorAll('a[href^="#"]').forEach(a=>{
   });
 });
 
-document.querySelector('.fsub').addEventListener('click',()=>{
-  alert('Connect Formspree or EmailJS to receive real messages.');
-});
+const contactForm = document.getElementById('contactForm');
+const formStatus = document.getElementById('form-status');
+
+if (contactForm) {
+  contactForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = contactForm.querySelector('.fsub');
+    btn.disabled = true;
+    btn.textContent = 'TRANSMITTING...';
+
+    try {
+      const res = await fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(new FormData(contactForm)).toString(),
+      });
+
+      if (res.ok) {
+        formStatus.style.display = 'block';
+        formStatus.style.background = 'rgba(79,195,247,.08)';
+        formStatus.style.border = '1px solid rgba(79,195,247,.25)';
+        formStatus.style.color = 'var(--accent)';
+        formStatus.textContent = '◈ MESSAGE TRANSMITTED — CONNECTION ESTABLISHED. WILL RESPOND FAST.';
+        contactForm.reset();
+        btn.textContent = 'TRANSMIT MESSAGE ◈';
+        btn.disabled = false;
+      } else {
+        throw new Error('Network response was not ok');
+      }
+    } catch (err) {
+      formStatus.style.display = 'block';
+      formStatus.style.background = 'rgba(255,80,80,.06)';
+      formStatus.style.border = '1px solid rgba(255,80,80,.2)';
+      formStatus.style.color = '#ff6b6b';
+      formStatus.textContent = '⚠ TRANSMISSION FAILED — PLEASE TRY AGAIN OR EMAIL DIRECTLY.';
+      btn.textContent = 'TRANSMIT MESSAGE ◈';
+      btn.disabled = false;
+    }
+  });
+}
 
 
 /* ─────────────────────────────────────────
