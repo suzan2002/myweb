@@ -1109,7 +1109,6 @@ document.addEventListener('mousemove', e => {
   cx = e.clientX; cy = e.clientY;
   cur.style.left = cx+'px'; cur.style.top = cy+'px';
 });
-// Smooth trailing ring
 function trailLoop(){
   t2x += (cx-t2x)*0.12;
   t2y += (cy-t2y)*0.12;
@@ -1127,283 +1126,126 @@ document.querySelectorAll('a,button,.hud-stat,.edu-card,.cert-card,.cap-metric,.
 ───────────────────────────────────────── */
 const wc = document.getElementById('wormhole');
 const wctx = wc.getContext('2d');
-let W, H, t = 0, mx = 0, my = 0;
-
-function resizeW(){
-  W = wc.width = wc.offsetWidth;
-  H = wc.height = wc.offsetHeight;
-}
+let W, H, wt = 0, wmx = 0, wmy = 0;
+function resizeW(){ W = wc.width = wc.offsetWidth; H = wc.height = wc.offsetHeight; }
 resizeW();
 window.addEventListener('resize', resizeW);
-document.addEventListener('mousemove', e => { mx = e.clientX/W - .5; my = e.clientY/H - .5; });
+document.addEventListener('mousemove', e => { wmx = e.clientX/W - .5; wmy = e.clientY/H - .5; });
 
-// Wormhole rings
 function drawWormhole(){
-  const cx2 = W*0.5 + mx*60;
-  const cy2 = H*0.45 + my*40;
-  const numRings = 32;
-
-  for(let i = 0; i < numRings; i++){
-    const progress = i / numRings;
-    const depth = 1 - progress;
-    const r = progress * Math.min(W, H) * 0.72;
-    const squeeze = 0.38 + progress * 0.25;
-    const drift = Math.sin(t*0.4 + i*0.18) * 6 * depth;
-    const alpha = depth * 0.18 + 0.02;
-    const hue = 200 + Math.sin(t*0.3 + i*0.1) * 20;
-    const lineW = depth * 1.4;
-
+  const cx2 = W*0.5 + wmx*60, cy2 = H*0.45 + wmy*40;
+  for(let i=0;i<32;i++){
+    const progress=i/32, depth=1-progress;
+    const r=progress*Math.min(W,H)*0.72;
+    const squeeze=0.38+progress*0.25;
+    const drift=Math.sin(wt*0.4+i*0.18)*6*depth;
+    const alpha=depth*0.18+0.02;
+    const hue=200+Math.sin(wt*0.3+i*0.1)*20;
     wctx.beginPath();
-    wctx.ellipse(cx2 + drift, cy2 + drift*0.3, r, r * squeeze, t*0.008 + i*0.01, 0, Math.PI*2);
-    wctx.strokeStyle = `hsla(${hue},80%,65%,${alpha})`;
-    wctx.lineWidth = lineW;
-    wctx.stroke();
+    wctx.ellipse(cx2+drift,cy2+drift*0.3,r,r*squeeze,wt*0.008+i*0.01,0,Math.PI*2);
+    wctx.strokeStyle=`hsla(${hue},80%,65%,${alpha})`;
+    wctx.lineWidth=depth*1.4; wctx.stroke();
   }
 }
-
-// Lens flare streaks radiating from centre
 function drawStreaks(){
-  const cx2 = W*0.5 + mx*60;
-  const cy2 = H*0.45 + my*40;
-  const numStreaks = 8;
-  for(let i = 0; i < numStreaks; i++){
-    const angle = (i/numStreaks)*Math.PI*2 + t*0.12;
-    const len = 80 + Math.sin(t*0.6 + i)*40;
-    const x2 = cx2 + Math.cos(angle)*len;
-    const y2 = cy2 + Math.sin(angle)*len;
-    const grad = wctx.createLinearGradient(cx2, cy2, x2, y2);
-    grad.addColorStop(0, `rgba(79,195,247,0.25)`);
-    grad.addColorStop(1, `rgba(79,195,247,0)`);
-    wctx.beginPath();
-    wctx.moveTo(cx2, cy2);
-    wctx.lineTo(x2, y2);
-    wctx.strokeStyle = grad;
-    wctx.lineWidth = 1;
-    wctx.stroke();
+  const cx2=W*0.5+wmx*60,cy2=H*0.45+wmy*40;
+  for(let i=0;i<8;i++){
+    const angle=(i/8)*Math.PI*2+wt*0.12;
+    const len=80+Math.sin(wt*0.6+i)*40;
+    const x2=cx2+Math.cos(angle)*len,y2=cy2+Math.sin(angle)*len;
+    const grad=wctx.createLinearGradient(cx2,cy2,x2,y2);
+    grad.addColorStop(0,'rgba(79,195,247,0.25)'); grad.addColorStop(1,'rgba(79,195,247,0)');
+    wctx.beginPath(); wctx.moveTo(cx2,cy2); wctx.lineTo(x2,y2);
+    wctx.strokeStyle=grad; wctx.lineWidth=1; wctx.stroke();
   }
 }
-
-// Central singularity glow
 function drawSingularity(){
-  const cx2 = W*0.5 + mx*60;
-  const cy2 = H*0.45 + my*40;
-  const pulse = 20 + Math.sin(t*1.5)*8;
-  const g = wctx.createRadialGradient(cx2,cy2,0,cx2,cy2,pulse*6);
-  g.addColorStop(0,'rgba(79,195,247,0.35)');
-  g.addColorStop(0.3,'rgba(79,195,247,0.08)');
-  g.addColorStop(1,'transparent');
-  wctx.beginPath();
-  wctx.arc(cx2,cy2,pulse*6,0,Math.PI*2);
-  wctx.fillStyle = g;
-  wctx.fill();
-  // inner core
-  const g2 = wctx.createRadialGradient(cx2,cy2,0,cx2,cy2,pulse);
-  g2.addColorStop(0,'rgba(255,255,255,0.9)');
-  g2.addColorStop(0.4,'rgba(79,195,247,0.6)');
-  g2.addColorStop(1,'transparent');
-  wctx.beginPath();
-  wctx.arc(cx2,cy2,pulse,0,Math.PI*2);
-  wctx.fillStyle = g2;
-  wctx.fill();
+  const cx2=W*0.5+wmx*60,cy2=H*0.45+wmy*40;
+  const pulse=20+Math.sin(wt*1.5)*8;
+  const g=wctx.createRadialGradient(cx2,cy2,0,cx2,cy2,pulse*6);
+  g.addColorStop(0,'rgba(79,195,247,0.35)'); g.addColorStop(0.3,'rgba(79,195,247,0.08)'); g.addColorStop(1,'transparent');
+  wctx.beginPath(); wctx.arc(cx2,cy2,pulse*6,0,Math.PI*2); wctx.fillStyle=g; wctx.fill();
+  const g2=wctx.createRadialGradient(cx2,cy2,0,cx2,cy2,pulse);
+  g2.addColorStop(0,'rgba(255,255,255,0.9)'); g2.addColorStop(0.4,'rgba(79,195,247,0.6)'); g2.addColorStop(1,'transparent');
+  wctx.beginPath(); wctx.arc(cx2,cy2,pulse,0,Math.PI*2); wctx.fillStyle=g2; wctx.fill();
 }
-
-// Gravitational lensing light bands
 function drawLensing(){
-  const cx2 = W*0.5 + mx*60;
-  const cy2 = H*0.45 + my*40;
-  const numBands = 5;
-  for(let i = 0; i < numBands; i++){
-    const r = 80 + i*55 + Math.sin(t*0.5+i)*15;
-    const alpha = 0.04 - i*0.006;
-    const spread = 0.08 + Math.sin(t*0.3+i*0.5)*0.03;
-    const startAngle = t*0.15*(i%2===0?1:-1) + i*0.8;
-    wctx.beginPath();
-    wctx.arc(cx2, cy2, r, startAngle, startAngle + Math.PI*2*spread);
-    wctx.strokeStyle = `rgba(200,220,255,${alpha})`;
-    wctx.lineWidth = 18 - i*2;
-    wctx.stroke();
+  const cx2=W*0.5+wmx*60,cy2=H*0.45+wmy*40;
+  for(let i=0;i<5;i++){
+    const r=80+i*55+Math.sin(wt*0.5+i)*15;
+    const alpha=0.04-i*0.006;
+    const spread=0.08+Math.sin(wt*0.3+i*0.5)*0.03;
+    const startAngle=wt*0.15*(i%2===0?1:-1)+i*0.8;
+    wctx.beginPath(); wctx.arc(cx2,cy2,r,startAngle,startAngle+Math.PI*2*spread);
+    wctx.strokeStyle=`rgba(200,220,255,${alpha})`; wctx.lineWidth=18-i*2; wctx.stroke();
   }
 }
-
 function animWormhole(){
   wctx.clearRect(0,0,W,H);
-
-  // Deep space bg gradient
-  const bg = wctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*0.7);
-  bg.addColorStop(0,'rgba(5,12,30,0.85)');
-  bg.addColorStop(1,'rgba(2,4,10,0.95)');
-  wctx.fillStyle = bg;
-  wctx.fillRect(0,0,W,H);
-
-  drawLensing();
-  drawWormhole();
-  drawStreaks();
-  drawSingularity();
-
-  t += 0.025;
-  requestAnimationFrame(animWormhole);
+  const bg=wctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*0.7);
+  bg.addColorStop(0,'rgba(5,12,30,0.85)'); bg.addColorStop(1,'rgba(2,4,10,0.95)');
+  wctx.fillStyle=bg; wctx.fillRect(0,0,W,H);
+  drawLensing(); drawWormhole(); drawStreaks(); drawSingularity();
+  wt+=0.025; requestAnimationFrame(animWormhole);
 }
 animWormhole();
 
 /* ─────────────────────────────────────────
    STARFIELD
 ───────────────────────────────────────── */
-const sc = document.getElementById('stars');
-const sctx = sc.getContext('2d');
-
-function resizeS(){ sc.width = sc.offsetWidth; sc.height = sc.offsetHeight; }
-resizeS();
-window.addEventListener('resize', resizeS);
-
-class Star {
-  constructor(){
-    this.reset(true);
-  }
+const sc=document.getElementById('stars'), sctx=sc.getContext('2d');
+function resizeS(){ sc.width=sc.offsetWidth; sc.height=sc.offsetHeight; }
+resizeS(); window.addEventListener('resize',resizeS);
+class Star{
+  constructor(){ this.reset(true); }
   reset(init){
-    this.x = Math.random() * sc.width;
-    this.y = init ? Math.random() * sc.height : -2;
-    this.z = Math.random() * 0.8 + 0.2;
-    this.r = this.z * 1.2;
-    this.alpha = this.z * 0.7;
-    this.speed = this.z * 0.15 + 0.05;
-    this.twinkle = Math.random() * Math.PI * 2;
-    this.twinkleSpeed = Math.random() * 0.04 + 0.01;
+    this.x=Math.random()*sc.width;
+    this.y=init?Math.random()*sc.height:-2;
+    this.z=Math.random()*0.8+0.2;
+    this.r=this.z*1.2; this.alpha=this.z*0.7;
+    this.speed=this.z*0.15+0.05;
+    this.twinkle=Math.random()*Math.PI*2;
+    this.twinkleSpeed=Math.random()*0.04+0.01;
   }
-  update(){
-    this.y += this.speed;
-    this.twinkle += this.twinkleSpeed;
-    if(this.y > sc.height + 2) this.reset(false);
-  }
+  update(){ this.x+=0; this.y+=this.speed; this.twinkle+=this.twinkleSpeed; if(this.y>sc.height+2)this.reset(false); }
   draw(){
-    const a = this.alpha * (0.7 + 0.3 * Math.sin(this.twinkle));
-    sctx.beginPath();
-    sctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
-    sctx.fillStyle = `rgba(180,220,255,${a})`;
-    sctx.fill();
-    // Cross flare for brighter stars
-    if(this.z > 0.7){
-      sctx.strokeStyle = `rgba(200,230,255,${a*0.3})`;
-      sctx.lineWidth = 0.5;
-      sctx.beginPath();
-      sctx.moveTo(this.x-this.r*3,this.y);
-      sctx.lineTo(this.x+this.r*3,this.y);
-      sctx.moveTo(this.x,this.y-this.r*3);
-      sctx.lineTo(this.x,this.y+this.r*3);
-      sctx.stroke();
+    const a=this.alpha*(0.7+0.3*Math.sin(this.twinkle));
+    sctx.beginPath(); sctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+    sctx.fillStyle=`rgba(180,220,255,${a})`; sctx.fill();
+    if(this.z>0.7){
+      sctx.strokeStyle=`rgba(200,230,255,${a*0.3})`; sctx.lineWidth=0.5;
+      sctx.beginPath(); sctx.moveTo(this.x-this.r*3,this.y); sctx.lineTo(this.x+this.r*3,this.y);
+      sctx.moveTo(this.x,this.y-this.r*3); sctx.lineTo(this.x,this.y+this.r*3); sctx.stroke();
     }
   }
 }
-
-const stars = Array.from({length:200},()=>new Star());
-
-function animStars(){
-  sctx.clearRect(0,0,sc.width,sc.height);
-  stars.forEach(s=>{ s.update(); s.draw(); });
-  requestAnimationFrame(animStars);
-}
+const stars=Array.from({length:200},()=>new Star());
+function animStars(){ sctx.clearRect(0,0,sc.width,sc.height); stars.forEach(s=>{s.update();s.draw();}); requestAnimationFrame(animStars); }
 animStars();
 
 /* ─────────────────────────────────────────
-   CTF SECTION — NEURAL NETWORK CANVAS
+   CTF NEURAL NETWORK CANVAS
 ───────────────────────────────────────── */
-const ctfc = document.getElementById('ctfCanvas');
-const ctfx = ctfc.getContext('2d');
-
-function resizeCTF(){
-  ctfc.width = ctfc.offsetWidth;
-  ctfc.height = ctfc.offsetHeight;
+const ctfc=document.getElementById('ctfCanvas'), ctfx=ctfc.getContext('2d');
+function resizeCTF(){ ctfc.width=ctfc.offsetWidth; ctfc.height=ctfc.offsetHeight; }
+resizeCTF(); window.addEventListener('resize',resizeCTF);
+class Node{
+  constructor(){ this.x=Math.random()*ctfc.width; this.y=Math.random()*ctfc.height; this.vx=(Math.random()-.5)*0.4; this.vy=(Math.random()-.5)*0.4; this.r=Math.random()*2+1; this.pulse=Math.random()*Math.PI*2; this.pulseSpeed=Math.random()*0.04+0.01; }
+  update(){ this.x+=this.vx; this.y+=this.vy; this.pulse+=this.pulseSpeed; if(this.x<0||this.x>ctfc.width)this.vx*=-1; if(this.y<0||this.y>ctfc.height)this.vy*=-1; }
+  draw(){ const a=0.3+0.3*Math.sin(this.pulse); const g=ctfx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.r*4); g.addColorStop(0,`rgba(79,195,247,${a*0.8})`); g.addColorStop(1,'transparent'); ctfx.beginPath(); ctfx.arc(this.x,this.y,this.r*4,0,Math.PI*2); ctfx.fillStyle=g; ctfx.fill(); ctfx.beginPath(); ctfx.arc(this.x,this.y,this.r,0,Math.PI*2); ctfx.fillStyle=`rgba(79,195,247,${a})`; ctfx.fill(); }
 }
-resizeCTF();
-window.addEventListener('resize', resizeCTF);
-
-class Node {
-  constructor(){
-    this.x = Math.random()*ctfc.width;
-    this.y = Math.random()*ctfc.height;
-    this.vx = (Math.random()-.5)*0.4;
-    this.vy = (Math.random()-.5)*0.4;
-    this.r = Math.random()*2+1;
-    this.pulse = Math.random()*Math.PI*2;
-    this.pulseSpeed = Math.random()*0.04+0.01;
-  }
-  update(){
-    this.x+=this.vx; this.y+=this.vy;
-    this.pulse+=this.pulseSpeed;
-    if(this.x<0||this.x>ctfc.width) this.vx*=-1;
-    if(this.y<0||this.y>ctfc.height) this.vy*=-1;
-  }
-  draw(){
-    const a = 0.3+0.3*Math.sin(this.pulse);
-    // Glow
-    const g = ctfx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.r*4);
-    g.addColorStop(0,`rgba(79,195,247,${a*0.8})`);
-    g.addColorStop(1,'transparent');
-    ctfx.beginPath(); ctfx.arc(this.x,this.y,this.r*4,0,Math.PI*2);
-    ctfx.fillStyle=g; ctfx.fill();
-    // Core
-    ctfx.beginPath(); ctfx.arc(this.x,this.y,this.r,0,Math.PI*2);
-    ctfx.fillStyle=`rgba(79,195,247,${a})`; ctfx.fill();
-  }
+class Packet{
+  constructor(from,to){ this.from=from; this.to=to; this.progress=0; this.speed=0.005+Math.random()*0.008; this.alive=true; }
+  update(){ this.progress+=this.speed; if(this.progress>=1)this.alive=false; }
+  draw(){ const x=this.from.x+(this.to.x-this.from.x)*this.progress; const y=this.from.y+(this.to.y-this.from.y)*this.progress; const g=ctfx.createRadialGradient(x,y,0,x,y,5); g.addColorStop(0,'rgba(79,195,247,0.9)'); g.addColorStop(1,'transparent'); ctfx.beginPath(); ctfx.arc(x,y,5,0,Math.PI*2); ctfx.fillStyle=g; ctfx.fill(); }
 }
-
-// Data packets travelling along connections
-class Packet {
-  constructor(from, to){
-    this.from = from; this.to = to;
-    this.progress = 0;
-    this.speed = 0.005 + Math.random()*0.008;
-    this.alive = true;
-  }
-  update(){
-    this.progress += this.speed;
-    if(this.progress>=1) this.alive = false;
-  }
-  draw(){
-    const x = this.from.x + (this.to.x - this.from.x)*this.progress;
-    const y = this.from.y + (this.to.y - this.from.y)*this.progress;
-    const g = ctfx.createRadialGradient(x,y,0,x,y,5);
-    g.addColorStop(0,'rgba(79,195,247,0.9)');
-    g.addColorStop(1,'transparent');
-    ctfx.beginPath(); ctfx.arc(x,y,5,0,Math.PI*2);
-    ctfx.fillStyle=g; ctfx.fill();
-  }
-}
-
-const nodes = Array.from({length:40},()=>new Node());
-let packets = [];
-let pTimer = 0;
-
+const nodes=Array.from({length:40},()=>new Node()); let packets=[]; let pTimer=0;
 function animCTF(){
   ctfx.clearRect(0,0,ctfc.width,ctfc.height);
   nodes.forEach(n=>n.update());
-
-  // Draw connections
-  for(let i=0;i<nodes.length;i++){
-    for(let j=i+1;j<nodes.length;j++){
-      const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y;
-      const d=Math.sqrt(dx*dx+dy*dy);
-      if(d<160){
-        const a = (1-d/160)*0.12;
-        ctfx.beginPath();
-        ctfx.moveTo(nodes[i].x,nodes[i].y);
-        ctfx.lineTo(nodes[j].x,nodes[j].y);
-        ctfx.strokeStyle=`rgba(79,195,247,${a})`;
-        ctfx.lineWidth=0.5; ctfx.stroke();
-      }
-    }
-  }
-
-  // Spawn packets
-  pTimer++;
-  if(pTimer%60===0 && nodes.length>1){
-    const from = nodes[Math.floor(Math.random()*nodes.length)];
-    const near = nodes.filter(n=>{ const dx=n.x-from.x,dy=n.y-from.y; return Math.sqrt(dx*dx+dy*dy)<160 && n!==from; });
-    if(near.length) packets.push(new Packet(from, near[Math.floor(Math.random()*near.length)]));
-  }
-  packets = packets.filter(pk=>pk.alive);
-  packets.forEach(pk=>{ pk.update(); pk.draw(); });
-
-  nodes.forEach(n=>n.draw());
+  for(let i=0;i<nodes.length;i++){ for(let j=i+1;j<nodes.length;j++){ const dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y,d=Math.sqrt(dx*dx+dy*dy); if(d<160){ ctfx.beginPath(); ctfx.moveTo(nodes[i].x,nodes[i].y); ctfx.lineTo(nodes[j].x,nodes[j].y); ctfx.strokeStyle=`rgba(79,195,247,${(1-d/160)*0.12})`; ctfx.lineWidth=0.5; ctfx.stroke(); } } }
+  pTimer++; if(pTimer%60===0&&nodes.length>1){ const from=nodes[Math.floor(Math.random()*nodes.length)]; const near=nodes.filter(n=>{ const dx=n.x-from.x,dy=n.y-from.y; return Math.sqrt(dx*dx+dy*dy)<160&&n!==from; }); if(near.length)packets.push(new Packet(from,near[Math.floor(Math.random()*near.length)])); }
+  packets=packets.filter(pk=>pk.alive); packets.forEach(pk=>{pk.update();pk.draw();}); nodes.forEach(n=>n.draw());
   requestAnimationFrame(animCTF);
 }
 animCTF();
@@ -1411,355 +1253,299 @@ animCTF();
 /* ─────────────────────────────────────────
    PHOTO 3D RIG
 ───────────────────────────────────────── */
-const rig = document.getElementById('photoRig');
+const rig=document.getElementById('photoRig');
 if(rig){
-  const scene = rig.parentElement;
-  scene.addEventListener('mousemove', e=>{
-    const r = rig.getBoundingClientRect();
-    const x = (e.clientX-r.left-r.width/2)/(r.width/2);
-    const y = (e.clientY-r.top-r.height/2)/(r.height/2);
-    rig.style.transform = `perspective(1200px) rotateY(${x*14}deg) rotateX(${-y*9}deg)`;
-    const d1 = rig.querySelector('.p-depth-1');
-    const d2 = rig.querySelector('.p-depth-2');
-    if(d1) d1.style.transform = `translateZ(-25px) translateX(${x*-8}px) translateY(${y*-8}px)`;
-    if(d2) d2.style.transform = `translateZ(-50px) translateX(${x*-16}px) translateY(${y*-16}px)`;
-  });
-  scene.addEventListener('mouseleave',()=>{
-    rig.style.transform = '';
-    const d1=rig.querySelector('.p-depth-1'),d2=rig.querySelector('.p-depth-2');
-    if(d1) d1.style.transform='translateZ(-25px)';
-    if(d2) d2.style.transform='translateZ(-50px)';
-  });
+  const scene=rig.parentElement;
+  scene.addEventListener('mousemove',e=>{ const r=rig.getBoundingClientRect(); const x=(e.clientX-r.left-r.width/2)/(r.width/2); const y=(e.clientY-r.top-r.height/2)/(r.height/2); rig.style.transform=`perspective(1200px) rotateY(${x*14}deg) rotateX(${-y*9}deg)`; const d1=rig.querySelector('.p-depth-1'),d2=rig.querySelector('.p-depth-2'); if(d1)d1.style.transform=`translateZ(-25px) translateX(${x*-8}px) translateY(${y*-8}px)`; if(d2)d2.style.transform=`translateZ(-50px) translateX(${x*-16}px) translateY(${y*-16}px)`; });
+  scene.addEventListener('mouseleave',()=>{ rig.style.transform=''; const d1=rig.querySelector('.p-depth-1'),d2=rig.querySelector('.p-depth-2'); if(d1)d1.style.transform='translateZ(-25px)'; if(d2)d2.style.transform='translateZ(-50px)'; });
 }
 
 /* ─────────────────────────────────────────
    PARALLAX HERO TITLE
 ───────────────────────────────────────── */
-const heroTitle = document.querySelector('.hero-title');
-window.addEventListener('scroll',()=>{
-  if(heroTitle) heroTitle.style.transform = `translateY(${window.scrollY*0.28}px)`;
-});
+const heroTitle=document.querySelector('.hero-title');
+window.addEventListener('scroll',()=>{ if(heroTitle)heroTitle.style.transform=`translateY(${window.scrollY*0.28}px)`; },{passive:true});
 
 /* ─────────────────────────────────────────
    SCROLL REVEAL
 ───────────────────────────────────────── */
-const obs = new IntersectionObserver(entries=>{
-  entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('on'); obs.unobserve(e.target); } });
-},{threshold:0.06});
+const obs=new IntersectionObserver(entries=>{ entries.forEach(e=>{ if(e.isIntersecting){e.target.classList.add('on');obs.unobserve(e.target);} }); },{threshold:0.06});
 document.querySelectorAll('.r').forEach(el=>obs.observe(el));
 
 /* ─────────────────────────────────────────
    SKILL BARS
 ───────────────────────────────────────── */
-const skObs = new IntersectionObserver(entries=>{
-  entries.forEach(e=>{ if(e.isIntersecting){ e.target.style.width=e.target.dataset.w+'%'; skObs.unobserve(e.target); } });
-},{threshold:.3});
+const skObs=new IntersectionObserver(entries=>{ entries.forEach(e=>{ if(e.isIntersecting){e.target.style.width=e.target.dataset.w+'%';skObs.unobserve(e.target);} }); },{threshold:.3});
 document.querySelectorAll('.sk-fill').forEach(f=>skObs.observe(f));
 
 /* ─────────────────────────────────────────
    NUMBER COUNTERS
 ───────────────────────────────────────── */
-function animNum(el, target){
-  const isFloat = !Number.isInteger(target);
-  let n = 0, step = target/55;
-  const iv2 = setInterval(()=>{
-    n+=step; if(n>=target){ n=target; clearInterval(iv2); }
-    el.textContent = isFloat ? n.toFixed(2) : Math.floor(n);
-  }, 16);
+function animNum(el,target){
+  const isFloat=!Number.isInteger(target); let n=0,step=target/55;
+  const iv2=setInterval(()=>{ n+=step; if(n>=target){n=target;clearInterval(iv2);} el.textContent=isFloat?n.toFixed(2):Math.floor(n); },16);
 }
-const numObs = new IntersectionObserver(entries=>{
-  entries.forEach(e=>{
-    if(e.isIntersecting){
-      e.target.querySelectorAll('.ticker-n,.hud-n,.scroll-stat-num').forEach(el=>{
-        const v = parseFloat(el.textContent);
-        if(!isNaN(v)) animNum(el,v);
-      });
-      numObs.unobserve(e.target);
-    }
-  });
-},{threshold:.3});
+const numObs=new IntersectionObserver(entries=>{ entries.forEach(e=>{ if(e.isIntersecting){ e.target.querySelectorAll('.ticker-n,.hud-n').forEach(el=>{ const v=parseFloat(el.textContent); if(!isNaN(v))animNum(el,v); }); numObs.unobserve(e.target); } }); },{threshold:.3});
 document.querySelectorAll('.hero-ticker,.hud-stats').forEach(el=>numObs.observe(el));
-
-/* ─────────────────────────────────────────
-   HUD TYPING EFFECT on load
-───────────────────────────────────────── */
-function typeText(el, text, speed=40){
-  el.textContent=''; let i=0;
-  const iv3=setInterval(()=>{ el.textContent+=text[i]; i++; if(i>=text.length) clearInterval(iv3); },speed);
-}
-setTimeout(()=>{
-  const coords = document.querySelector('.hero-coords');
-  if(coords){ const orig=coords.textContent; typeText(coords, orig, 30); }
-}, 1800);
 
 /* ─────────────────────────────────────────
    SMOOTH NAV
 ───────────────────────────────────────── */
 document.querySelectorAll('a[href^="#"]').forEach(a=>{
-  a.addEventListener('click',e=>{
-    const t2=document.querySelector(a.getAttribute('href'));
-    if(t2){ e.preventDefault(); t2.scrollIntoView({behavior:'smooth'}); }
-  });
+  a.addEventListener('click',e=>{ const t2=document.querySelector(a.getAttribute('href')); if(t2){e.preventDefault();t2.scrollIntoView({behavior:'smooth'});} });
 });
 
-document.querySelector('.fsub').addEventListener('click',()=>{
-  alert('Connect Formspree or EmailJS to receive real messages.');
-});
-
+/* ─────────────────────────────────────────
+   FORM SUBMIT
+───────────────────────────────────────── */
+const fsubEl=document.querySelector('.fsub');
+if(fsubEl) fsubEl.addEventListener('click',()=>alert('Connect Formspree or EmailJS to receive real messages.'));
 
 /* ─────────────────────────────────────────
    SCROLL PROGRESS BAR
 ───────────────────────────────────────── */
-const prog = document.getElementById('scroll-prog');
-const btt = document.getElementById('btt');
-const navEl = document.querySelector('nav');
-const allSections = document.querySelectorAll('section[id]');
-const navLinks = document.querySelectorAll('.nav-links a');
+const prog=document.getElementById('scroll-prog');
+const btt=document.getElementById('btt');
+const navEl=document.querySelector('nav');
+const allSections=document.querySelectorAll('section[id]');
+const navLinks=document.querySelectorAll('.nav-links a');
 
-window.addEventListener('scroll', () => {
-  const scrolled = window.scrollY;
-  const total = document.documentElement.scrollHeight - window.innerHeight;
-  if(prog) prog.style.width = (scrolled/total*100) + '%';
-
-  // Nav scrolled state
-  if(navEl) navEl.classList.toggle('scrolled', scrolled > 80);
-
-  // Back to top visibility
-  if(btt) btt.classList.toggle('visible', scrolled > 600);
-
-  // Active nav link
-  let current = '';
-  allSections.forEach(sec => {
-    if(scrolled >= sec.offsetTop - 200) current = sec.getAttribute('id');
-  });
-  navLinks.forEach(a => {
-    a.classList.toggle('active', a.getAttribute('href') === '#' + current);
-  });
-}, { passive: true });
+window.addEventListener('scroll',()=>{
+  const scrolled=window.scrollY;
+  const total=document.documentElement.scrollHeight-window.innerHeight;
+  if(prog)prog.style.width=(scrolled/total*100)+'%';
+  if(navEl)navEl.classList.toggle('scrolled',scrolled>80);
+  if(btt)btt.classList.toggle('visible',scrolled>600);
+  let current='';
+  allSections.forEach(sec=>{ if(scrolled>=sec.offsetTop-200)current=sec.getAttribute('id'); });
+  navLinks.forEach(a=>{ a.classList.toggle('active',a.getAttribute('href')==='#'+current); });
+},{passive:true});
 
 /* ─────────────────────────────────────────
    BACK TO TOP
 ───────────────────────────────────────── */
-if(btt) btt.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+if(btt)btt.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
 
 /* ─────────────────────────────────────────
    MOBILE NAV
 ───────────────────────────────────────── */
-const burger = document.getElementById('navBurger2');
-const mobilePanel = document.getElementById('mobilePanel');
-if(burger && mobilePanel) {
-  burger.addEventListener('click', () => {
-    burger.classList.toggle('open');
-    mobilePanel.classList.toggle('open');
-  });
-  mobilePanel.querySelectorAll('a').forEach(a => {
-    a.addEventListener('click', () => {
-      burger.classList.remove('open');
-      mobilePanel.classList.remove('open');
-    });
-  });
+const burger=document.getElementById('navBurger2');
+const mobilePanel=document.getElementById('mobilePanel');
+if(burger&&mobilePanel){
+  burger.addEventListener('click',()=>{ burger.classList.toggle('open'); mobilePanel.classList.toggle('open'); });
+  mobilePanel.querySelectorAll('a').forEach(a=>{ a.addEventListener('click',()=>{ burger.classList.remove('open'); mobilePanel.classList.remove('open'); }); });
 }
 
 /* ─────────────────────────────────────────
-   TEXT SCRAMBLE ENGINE
+   TEXT SCRAMBLE — safe version with stored originals
+   Key fix: originals captured ONCE at page load, never from live DOM
 ───────────────────────────────────────── */
-const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&';
-function scrambleText(el, finalText, duration = 800) {
+const CHARS='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&';
+
+// Store originals at load time so scramble never reads corrupted DOM text
+const originalTexts = new WeakMap();
+
+function getOriginal(el) {
+  if (!originalTexts.has(el)) {
+    originalTexts.set(el, el.textContent);
+  }
+  return originalTexts.get(el);
+}
+
+// Track active intervals per element — cancel before starting new one
+const activeScrambles = new WeakMap();
+
+function scrambleEl(el, duration=700) {
+  // Cancel any running scramble on this element
+  if (activeScrambles.has(el)) {
+    clearInterval(activeScrambles.get(el));
+  }
+  const orig = getOriginal(el);  // always use stored original
   const frames = Math.floor(duration / 40);
   let frame = 0;
-  const orig = finalText || el.textContent;
   const iv = setInterval(() => {
     const progress = frame / frames;
     el.textContent = orig.split('').map((ch, i) => {
-      if(ch === ' ') return ' ';
-      if(i / orig.length < progress) return orig[i];
+      if (ch === ' ' || ch === '/' || ch === '◈' || ch === '/') return ch;
+      if (i / orig.length < progress) return orig[i];
       return CHARS[Math.floor(Math.random() * CHARS.length)];
     }).join('');
     frame++;
-    if(frame > frames) { el.textContent = orig; clearInterval(iv); }
+    if (frame > frames) {
+      el.textContent = orig;  // always restore to stored original
+      activeScrambles.delete(el);
+      clearInterval(iv);
+    }
   }, 40);
+  activeScrambles.set(el, iv);
 }
 
-// Scramble nav links on hover
-document.querySelectorAll('.nav-links a').forEach(a => {
-  const orig = a.textContent;
-  a.addEventListener('mouseenter', () => scrambleText(a, orig, 500));
+// Nav links — scramble on hover
+document.querySelectorAll('.nav-links a, .mob-link').forEach(a => {
+  getOriginal(a); // pre-cache
+  a.addEventListener('mouseenter', () => scrambleEl(a, 500));
 });
 
-// Scramble section eye labels on scroll into view
+// Section eye labels — scramble once on scroll-in
 const scramObs = new IntersectionObserver(entries => {
   entries.forEach(e => {
-    if(e.isIntersecting) {
-      setTimeout(() => scrambleText(e.target, e.target.textContent, 900), 200);
+    if (e.isIntersecting) {
+      getOriginal(e.target); // pre-cache if not already
+      setTimeout(() => scrambleEl(e.target, 800), 200);
       scramObs.unobserve(e.target);
     }
   });
 }, { threshold: .5 });
-document.querySelectorAll('.s-eye').forEach(el => scramObs.observe(el));
+document.querySelectorAll('.s-eye').forEach(el => {
+  getOriginal(el); // pre-cache ALL originals before any observer fires
+  scramObs.observe(el);
+});
 
 /* ─────────────────────────────────────────
-   PERIODIC HERO TITLE GLITCH
+   HERO TITLE GLITCH — safe version
+   Key fix: originals stored at load time, glitch uses stored originals,
+   interval is ALWAYS cleared, recursive setTimeout not called until restored
 ───────────────────────────────────────── */
 const heroRows = document.querySelectorAll('.hero-title .row span');
+
+// Cache ALL hero row originals immediately at page load
+const heroOriginals = [];
+heroRows.forEach((row, i) => {
+  heroOriginals[i] = row.textContent;
+});
+
+let glitchActive = false;
+
 function doGlitch() {
-  heroRows.forEach(row => {
-    const orig = row.textContent;
-    let f = 0;
-    const iv2 = setInterval(() => {
-      if(f < 5) {
-        row.textContent = orig.split('').map(c =>
-          c === ' ' ? ' ' : (Math.random() > .5 ? CHARS[Math.floor(Math.random()*CHARS.length)] : c)
-        ).join('');
-        row.style.color = f % 2 === 0 ? '#FF4D40' : '';
-        row.style.textShadow = f % 2 === 0 ? '2px 0 #FF4D40, -2px 0 #4FC3F7' : '';
-      } else {
-        row.textContent = orig;
-        row.style.color = '';
-        row.style.textShadow = '';
-        clearInterval(iv2);
-      }
-      f++;
-    }, 60);
-  });
-  setTimeout(doGlitch, 5000 + Math.random() * 4000);
+  if (glitchActive) return; // prevent stacking
+  glitchActive = true;
+
+  let totalFrames = 8;
+  let frame = 0;
+
+  // Work on all rows simultaneously with their stored originals
+  const rowData = Array.from(heroRows).map((row, i) => ({
+    el: row,
+    orig: heroOriginals[i]  // ← always the real text, captured at load
+  }));
+
+  const glitchIv = setInterval(() => {
+    frame++;
+
+    if (frame <= totalFrames) {
+      // Scramble phase
+      rowData.forEach(({ el, orig }) => {
+        if (frame % 2 === 0) {
+          // Scramble characters
+          el.textContent = orig.split('').map(c =>
+            (c === ' ') ? ' ' : (Math.random() > 0.45 ? CHARS[Math.floor(Math.random() * CHARS.length)] : c)
+          ).join('');
+          el.style.cssText = 'color:#FF4D40;text-shadow:3px 0 #FF4D40,-3px 0 #4FC3F7;';
+        } else {
+          // Partial restore + different colour
+          el.textContent = orig.split('').map(c =>
+            (c === ' ') ? ' ' : (Math.random() > 0.7 ? CHARS[Math.floor(Math.random() * CHARS.length)] : c)
+          ).join('');
+          el.style.cssText = 'color:var(--accent);text-shadow:0 0 20px rgba(79,195,247,.6);';
+        }
+      });
+    } else {
+      // ALWAYS fully restore on exit — clear interval first
+      clearInterval(glitchIv);
+      rowData.forEach(({ el, orig }) => {
+        el.textContent = orig;  // restore exact original
+        el.style.cssText = '';  // clear all inline styles
+      });
+      glitchActive = false;
+      // Schedule next glitch only AFTER full restore
+      setTimeout(doGlitch, 4000 + Math.random() * 5000);
+    }
+  }, 70);
 }
-setTimeout(doGlitch, 3000);
+
+// Start first glitch after hero loads, well after page settle
+setTimeout(doGlitch, 3500);
 
 /* ─────────────────────────────────────────
    MAGNETIC HERO CTA
 ───────────────────────────────────────── */
-const magnetBtn = document.querySelector('.hero-cta');
-if(magnetBtn) {
-  magnetBtn.addEventListener('mousemove', e => {
-    const r = magnetBtn.getBoundingClientRect();
-    const bx = r.left + r.width/2;
-    const by = r.top + r.height/2;
-    const dx = (e.clientX - bx) * .35;
-    const dy = (e.clientY - by) * .35;
-    magnetBtn.style.transform = `translate(${dx}px,${dy}px)`;
-  });
-  magnetBtn.addEventListener('mouseleave', () => {
-    magnetBtn.style.transform = '';
-  });
+const magnetBtn=document.querySelector('.hero-cta');
+if(magnetBtn){
+  magnetBtn.addEventListener('mousemove',e=>{ const r=magnetBtn.getBoundingClientRect(); const dx=(e.clientX-r.left-r.width/2)*.35; const dy=(e.clientY-r.top-r.height/2)*.35; magnetBtn.style.transform=`translate(${dx}px,${dy}px)`; });
+  magnetBtn.addEventListener('mouseleave',()=>{ magnetBtn.style.transform=''; });
 }
 
 /* ─────────────────────────────────────────
    CURSOR SPARK TRAIL
 ───────────────────────────────────────── */
-let lastSparkTime = 0;
-document.addEventListener('mousemove', e => {
-  const now = Date.now();
-  if(now - lastSparkTime < 80) return;
-  lastSparkTime = now;
-  const spark = document.createElement('div');
-  spark.className = 'cursor-spark';
-  spark.style.left = e.clientX + 'px';
-  spark.style.top = e.clientY + 'px';
+let lastSparkTime=0;
+document.addEventListener('mousemove',e=>{
+  const now=Date.now();
+  if(now-lastSparkTime<100)return;
+  lastSparkTime=now;
+  const spark=document.createElement('div');
+  spark.className='cursor-spark';
+  spark.style.cssText=`left:${e.clientX}px;top:${e.clientY}px`;
   document.body.appendChild(spark);
-  setTimeout(() => spark.remove(), 600);
+  setTimeout(()=>spark.remove(),600);
 });
 
 /* ─────────────────────────────────────────
    RADAR CANVAS
 ───────────────────────────────────────── */
-const radarCanvas = document.getElementById('radar');
-if(radarCanvas) {
-  const rctx = radarCanvas.getContext('2d');
-  const RC = 60; // centre
-  let radarAngle = 0;
-  const radarBlips = Array.from({length:6}, () => ({
-    r: Math.random()*40+8,
-    a: Math.random()*Math.PI*2,
-    alpha: 0
-  }));
-
-  function animRadar() {
+const radarCanvas=document.getElementById('radar');
+if(radarCanvas){
+  const rctx=radarCanvas.getContext('2d');
+  const RC=60;
+  let radarAngle=0;
+  const radarBlips=Array.from({length:6},()=>({ r:Math.random()*40+8, a:Math.random()*Math.PI*2, alpha:0 }));
+  function animRadar(){
     rctx.clearRect(0,0,120,120);
-
-    // Rings
-    [15,30,45,58].forEach(r => {
-      rctx.beginPath();
-      rctx.arc(RC,RC,r,0,Math.PI*2);
-      rctx.strokeStyle = 'rgba(79,195,247,0.35)';
-      rctx.lineWidth = .5;
-      rctx.stroke();
-    });
-
-    // Cross hairs
-    rctx.strokeStyle = 'rgba(79,195,247,0.2)';
-    rctx.lineWidth = .5;
+    [15,30,45,58].forEach(r=>{ rctx.beginPath(); rctx.arc(RC,RC,r,0,Math.PI*2); rctx.strokeStyle='rgba(79,195,247,0.35)'; rctx.lineWidth=.5; rctx.stroke(); });
+    rctx.strokeStyle='rgba(79,195,247,0.2)'; rctx.lineWidth=.5;
     rctx.beginPath(); rctx.moveTo(RC,2); rctx.lineTo(RC,118); rctx.stroke();
     rctx.beginPath(); rctx.moveTo(2,RC); rctx.lineTo(118,RC); rctx.stroke();
-
-    // Sweep gradient
-    const sweep = rctx.createConicalGradient ? null : null;
-    // Fallback: arc sweep
-    const sweepStart = radarAngle - 0.8;
-    for(let i=0; i<20; i++){
-      const a = sweepStart + (i/20)*0.8;
-      const alpha = (i/20)*0.18;
-      rctx.beginPath();
-      rctx.moveTo(RC,RC);
-      rctx.arc(RC,RC,58,a,a+0.04);
-      rctx.closePath();
-      rctx.fillStyle = `rgba(79,195,247,${alpha})`;
-      rctx.fill();
-    }
-
-    // Sweep line
-    rctx.beginPath();
-    rctx.moveTo(RC,RC);
-    rctx.lineTo(RC + Math.cos(radarAngle)*58, RC + Math.sin(radarAngle)*58);
-    rctx.strokeStyle = 'rgba(79,195,247,0.7)';
-    rctx.lineWidth = 1;
-    rctx.stroke();
-
-    // Blips
-    radarBlips.forEach(b => {
-      // Light up when sweep passes
-      const diff = ((radarAngle - b.a) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
-      if(diff < 0.15) b.alpha = 1;
-      else b.alpha = Math.max(0, b.alpha - 0.015);
-      if(b.alpha > 0) {
-        const bx = RC + Math.cos(b.a)*b.r;
-        const by = RC + Math.sin(b.a)*b.r;
-        rctx.beginPath();
-        rctx.arc(bx,by,2.5,0,Math.PI*2);
-        rctx.fillStyle = `rgba(79,195,247,${b.alpha})`;
-        rctx.fill();
-        // Glow
-        const g = rctx.createRadialGradient(bx,by,0,bx,by,8);
-        g.addColorStop(0,`rgba(79,195,247,${b.alpha*0.5})`);
-        g.addColorStop(1,'transparent');
-        rctx.beginPath(); rctx.arc(bx,by,8,0,Math.PI*2);
-        rctx.fillStyle=g; rctx.fill();
-      }
-    });
-
-    radarAngle += 0.04;
-    requestAnimationFrame(animRadar);
+    const sweepStart=radarAngle-0.8;
+    for(let i=0;i<20;i++){ const a=sweepStart+(i/20)*0.8; rctx.beginPath(); rctx.moveTo(RC,RC); rctx.arc(RC,RC,58,a,a+0.04); rctx.closePath(); rctx.fillStyle=`rgba(79,195,247,${(i/20)*0.18})`; rctx.fill(); }
+    rctx.beginPath(); rctx.moveTo(RC,RC); rctx.lineTo(RC+Math.cos(radarAngle)*58,RC+Math.sin(radarAngle)*58); rctx.strokeStyle='rgba(79,195,247,0.7)'; rctx.lineWidth=1; rctx.stroke();
+    radarBlips.forEach(b=>{ const diff=((radarAngle-b.a)%(Math.PI*2)+Math.PI*2)%(Math.PI*2); if(diff<0.15)b.alpha=1; else b.alpha=Math.max(0,b.alpha-0.015); if(b.alpha>0){ const bx=RC+Math.cos(b.a)*b.r,by=RC+Math.sin(b.a)*b.r; rctx.beginPath(); rctx.arc(bx,by,2.5,0,Math.PI*2); rctx.fillStyle=`rgba(79,195,247,${b.alpha})`; rctx.fill(); } });
+    radarAngle+=0.04; requestAnimationFrame(animRadar);
   }
   animRadar();
 }
 
 /* ─────────────────────────────────────────
-   TYPEWRITER for HUD data rows
+   HUD DATA ROW SCRAMBLE on scroll-in
+   Safe: pre-caches originals before observer fires
 ───────────────────────────────────────── */
+// Pre-cache all HUD values at load time
+document.querySelectorAll('.info-rows .i-val, .cap-meta .cm-v, .photo-data .pd-text').forEach(el => getOriginal(el));
+
 const hudObs = new IntersectionObserver(entries => {
   entries.forEach(e => {
-    if(e.isIntersecting) {
+    if (e.isIntersecting) {
       const vals = e.target.querySelectorAll('.i-val, .cm-v, .pd-text');
       vals.forEach((el, i) => {
-        const orig = el.textContent;
-        setTimeout(() => scrambleText(el, orig, 600), i * 120);
+        setTimeout(() => scrambleEl(el, 600), i * 150);
       });
       hudObs.unobserve(e.target);
     }
   });
 }, { threshold: .4 });
-document.querySelectorAll('.info-rows, .cap-meta').forEach(el => hudObs.observe(el));
+document.querySelectorAll('.info-rows, .cap-meta, .photo-data').forEach(el => hudObs.observe(el));
 
-
+/* ─────────────────────────────────────────
+   TYPEWRITER for hero coords
+───────────────────────────────────────── */
+function typeText(el, text, speed=30){
+  const orig = getOriginal(el);
+  el.textContent=''; let i=0;
+  const tiv=setInterval(()=>{ el.textContent+=orig[i]; i++; if(i>=orig.length)clearInterval(tiv); },speed);
+}
+setTimeout(()=>{
+  const coords=document.querySelector('.hero-coords');
+  if(coords) typeText(coords, coords.textContent, 30);
+},1800);
 </script>
 </body>
 </html>
