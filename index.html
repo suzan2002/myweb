@@ -601,6 +601,13 @@ textarea.fi{min-height:110px;resize:vertical}
   transition:box-shadow .2s,transform .2s;
 }
 .fsub:hover{box-shadow:0 0 50px rgba(79,195,247,.5);transform:translateY(-2px)}
+.fsub:disabled{opacity:.5;cursor:not-allowed;transform:none;pointer-events:none}
+.form-msg{
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;
+  padding:.85rem 1.25rem;border-radius:1px;display:none;
+}
+.form-msg.ok{display:block;color:var(--accent);border:1px solid rgba(79,195,247,.2);background:rgba(79,195,247,.05)}
+.form-msg.err{display:block;color:var(--accent3);border:1px solid rgba(255,109,0,.2);background:rgba(255,109,0,.05)}
 
 footer{
   padding:2rem 5vw;background:#020408;
@@ -1069,12 +1076,15 @@ a:focus-visible, button:focus-visible {
         <div class="con-link"><span>Sydney, NSW, Australia 🇦🇺</span></div>
       </div>
     </div>
-    <div class="form r d2">
-      <div class="fg"><label class="fl">NAME</label><input type="text" class="fi" placeholder="Your name"></div>
-      <div class="fg"><label class="fl">EMAIL</label><input type="email" class="fi" placeholder="your@email.com"></div>
-      <div class="fg"><label class="fl">MESSAGE</label><textarea class="fi" placeholder="Tell me about your role or project..."></textarea></div>
-      <button class="fsub">TRANSMIT MESSAGE ◈</button>
-    </div>
+    <form class="form r d2" id="contact-form" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field">
+      <input type="hidden" name="form-name" value="contact">
+      <p style="display:none"><label>Do not fill: <input name="bot-field"></label></p>
+      <div class="fg"><label class="fl" for="cf-name">NAME</label><input id="cf-name" type="text" name="name" class="fi" placeholder="Your name" required></div>
+      <div class="fg"><label class="fl" for="cf-email">EMAIL</label><input id="cf-email" type="email" name="email" class="fi" placeholder="your@email.com" required></div>
+      <div class="fg"><label class="fl" for="cf-message">MESSAGE</label><textarea id="cf-message" name="message" class="fi" placeholder="Tell me about your role or project..." required></textarea></div>
+      <button type="submit" class="fsub" id="form-btn">TRANSMIT MESSAGE ◈</button>
+      <div class="form-msg" id="form-msg"></div>
+    </form>
   </div>
 </section>
 
@@ -1758,6 +1768,44 @@ const hudObs = new IntersectionObserver(entries => {
   });
 }, { threshold: .4 });
 document.querySelectorAll('.info-rows, .cap-meta').forEach(el => hudObs.observe(el));
+
+/* ─────────────────────────────────────────
+   CONTACT FORM
+───────────────────────────────────────── */
+(function(){
+  const form = document.getElementById('contact-form');
+  const btn  = document.getElementById('form-btn');
+  const msg  = document.getElementById('form-msg');
+  if(!form) return;
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    btn.disabled = true;
+    btn.textContent = 'TRANSMITTING...';
+    msg.className = 'form-msg';
+
+    try {
+      const res = await fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(new FormData(form)).toString()
+      });
+      if(res.ok) {
+        msg.className = 'form-msg ok';
+        msg.textContent = 'SIGNAL RECEIVED // MESSAGE TRANSMITTED SUCCESSFULLY';
+        form.reset();
+      } else {
+        throw new Error('bad response');
+      }
+    } catch(_) {
+      msg.className = 'form-msg err';
+      msg.textContent = 'TRANSMISSION FAILED // PLEASE RETRY OR CONTACT DIRECTLY';
+    } finally {
+      btn.textContent = 'TRANSMIT MESSAGE ◈';
+      btn.disabled = false;
+    }
+  });
+})();
 
 
 </script>
